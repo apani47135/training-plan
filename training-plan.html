@@ -1,0 +1,640 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Race Season — Training Plan</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#0B1120;
+    --surface:#121B2E;
+    --surface-2:#182340;
+    --border:#22304C;
+    --text:#E9EDF6;
+    --muted:#8A96AC;
+    --swim:#38BDF8;
+    --bike:#F5A524;
+    --run:#A78BFA;
+    --lift:#64748B;
+    --rest:#34D399;
+    --race:#FF6B4A;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--bg);
+    color:var(--text);
+    font-family:'Inter',sans-serif;
+    -webkit-font-smoothing:antialiased;
+    padding-bottom:60px;
+  }
+  h1,h2,h3,.display{font-family:'Space Grotesk',sans-serif;}
+
+  /* Header */
+  .hero{
+    padding:28px 20px 20px;
+    background:linear-gradient(180deg, #14213B 0%, var(--bg) 100%);
+    border-bottom:1px solid var(--border);
+  }
+  .hero-eyebrow{
+    font-size:13px;
+    color:var(--muted);
+    margin:0 0 6px;
+  }
+  .hero h1{
+    font-size:26px;
+    line-height:1.15;
+    margin:0 0 18px;
+    font-weight:700;
+    letter-spacing:-0.01em;
+  }
+  .race-targets{
+    display:flex;
+    gap:10px;
+  }
+  .race-target{
+    flex:1;
+    background:var(--surface);
+    border:1px solid var(--border);
+    border-radius:14px;
+    padding:12px 14px;
+  }
+  .race-target.tri{border-left:3px solid var(--race);}
+  .race-target.half{border-left:3px solid var(--run);}
+  .race-target .rt-label{font-size:11.5px;color:var(--muted);margin-bottom:3px;}
+  .race-target .rt-date{font-family:'Space Grotesk',sans-serif;font-size:16px;font-weight:600;}
+  .race-target .rt-days{font-size:12px;color:var(--muted);margin-top:2px;}
+
+  /* Tabs */
+  .tabbar{
+    position:sticky;
+    top:0;
+    z-index:10;
+    background:rgba(11,17,32,0.92);
+    backdrop-filter:blur(8px);
+    border-bottom:1px solid var(--border);
+    display:flex;
+    gap:0;
+    padding:0 20px;
+  }
+  .tabbtn{
+    flex:none;
+    background:none;
+    border:none;
+    color:var(--muted);
+    font-family:'Inter',sans-serif;
+    font-size:13.5px;
+    font-weight:600;
+    padding:14px 10px;
+    cursor:pointer;
+    border-bottom:2px solid transparent;
+  }
+  .tabbtn.active{
+    color:var(--text);
+    border-bottom:2px solid var(--race);
+  }
+  .tabpanel{display:none; padding:18px 20px 8px;}
+  .tabpanel.active{display:block;}
+
+  /* Week nav (inside calendar tab) */
+  .weeknav{
+    display:flex;
+    gap:8px;
+    overflow-x:auto;
+    padding-bottom:4px;
+    margin-bottom:18px;
+    -webkit-overflow-scrolling:touch;
+    scrollbar-width:none;
+  }
+  .weeknav::-webkit-scrollbar{display:none;}
+  .weekpill{
+    flex:none;
+    background:var(--surface);
+    border:1px solid var(--border);
+    color:var(--muted);
+    font-size:12.5px;
+    font-weight:600;
+    padding:8px 13px;
+    border-radius:999px;
+    white-space:nowrap;
+    cursor:pointer;
+  }
+  .weekpill.active{
+    background:var(--race);
+    border-color:var(--race);
+    color:#1A0F0A;
+  }
+
+  .week-block{display:none;}
+  .week-block.active{display:block;}
+  .week-title{
+    font-size:17px;
+    font-weight:700;
+    margin:4px 0 2px;
+  }
+  .week-goal{
+    font-size:13px;
+    color:var(--muted);
+    margin:0 0 16px;
+  }
+
+  /* Day card */
+  .day{
+    background:var(--surface);
+    border:1px solid var(--border);
+    border-radius:14px;
+    margin-bottom:10px;
+    overflow:hidden;
+  }
+  .day.today{border-color:var(--race);}
+  .day.key{border-color:var(--bike);}
+  .day.race{border-color:var(--race); background:linear-gradient(180deg, #201217 0%, var(--surface) 55%);}
+
+  .day-head{
+    display:flex;
+    align-items:center;
+    gap:12px;
+    padding:13px 14px;
+    cursor:pointer;
+  }
+  .day-date{
+    flex:none;
+    width:42px;
+    text-align:center;
+  }
+  .day-date .dow{font-size:10.5px; color:var(--muted); text-transform:uppercase; letter-spacing:0.03em;}
+  .day-date .num{font-family:'Space Grotesk',sans-serif; font-size:18px; font-weight:700; line-height:1.1;}
+  .day-main{flex:1; min-width:0;}
+  .day-title{font-size:14.5px; font-weight:600; display:flex; align-items:center; gap:7px; flex-wrap:wrap;}
+  .day-sub{font-size:12.5px; color:var(--muted); margin-top:2px;}
+  .badge{
+    font-size:10px;
+    font-weight:700;
+    padding:2px 7px;
+    border-radius:6px;
+    letter-spacing:0.02em;
+  }
+  .badge.today{background:var(--race); color:#1A0F0A;}
+  .badge.key{background:var(--bike); color:#241800;}
+  .badge.race{background:var(--race); color:#1A0F0A;}
+  .chev{
+    flex:none;
+    width:18px; height:18px;
+    color:var(--muted);
+    transition:transform .18s ease;
+  }
+  .day.open .chev{transform:rotate(180deg);}
+
+  .dot{width:8px;height:8px;border-radius:50%;flex:none;}
+  .dot.swim{background:var(--swim);}
+  .dot.bike{background:var(--bike);}
+  .dot.run{background:var(--run);}
+  .dot.lift{background:var(--lift);}
+  .dot.rest{background:var(--rest);}
+  .dot.race{background:var(--race);}
+
+  .day-body{
+    display:none;
+    padding:0 16px 16px 66px;
+    font-size:13.5px;
+    line-height:1.55;
+  }
+  .day.open .day-body{display:block;}
+  .sec{margin-bottom:12px;}
+  .sec:last-child{margin-bottom:0;}
+  .sec-label{
+    font-size:11px;
+    font-weight:700;
+    color:var(--muted);
+    text-transform:uppercase;
+    letter-spacing:0.04em;
+    margin-bottom:5px;
+  }
+  .sec ul{margin:0; padding-left:18px;}
+  .sec li{margin-bottom:3px;}
+  .sec p{margin:0 0 6px;}
+  .note{
+    background:var(--surface-2);
+    border-radius:10px;
+    padding:9px 11px;
+    font-size:12.5px;
+    color:var(--muted);
+    margin-top:8px;
+  }
+
+  /* Reference tab */
+  .ref-section{margin-bottom:26px;}
+  .ref-h{font-size:15.5px; font-weight:700; margin:0 0 10px;}
+  .ref-card{
+    background:var(--surface);
+    border:1px solid var(--border);
+    border-radius:14px;
+    padding:14px 16px;
+    margin-bottom:10px;
+  }
+  table.ftab{width:100%; border-collapse:collapse; font-size:12.5px;}
+  table.ftab th, table.ftab td{
+    text-align:left;
+    padding:8px 6px;
+    border-bottom:1px solid var(--border);
+    vertical-align:top;
+  }
+  table.ftab th{color:var(--muted); font-weight:600; font-size:11px; text-transform:uppercase; letter-spacing:0.03em;}
+  table.ftab tr:last-child td{border-bottom:none;}
+  .flow{
+    display:flex;
+    flex-wrap:wrap;
+    align-items:center;
+    gap:6px;
+    font-size:12.5px;
+  }
+  .flow span.step{
+    background:var(--surface-2);
+    padding:5px 9px;
+    border-radius:8px;
+  }
+  .flow span.arrow{color:var(--muted);}
+
+  .legend{
+    display:flex;
+    flex-wrap:wrap;
+    gap:12px;
+    margin-bottom:16px;
+    font-size:12px;
+    color:var(--muted);
+  }
+  .legend span{display:flex; align-items:center; gap:5px;}
+</style>
+</head>
+<body>
+
+<div class="hero">
+  <p class="hero-eyebrow">Sept 15 – Oct 25, 2026</p>
+  <h1>Olympic Triathlon → Half Marathon</h1>
+  <div class="race-targets">
+    <div class="race-target tri">
+      <div class="rt-label">Olympic Triathlon</div>
+      <div class="rt-date">Sun, Oct 11</div>
+      <div class="rt-days" id="days-to-tri"></div>
+    </div>
+    <div class="race-target half">
+      <div class="rt-label">Half Marathon</div>
+      <div class="rt-date">Sun, Oct 25</div>
+      <div class="rt-days" id="days-to-half"></div>
+    </div>
+  </div>
+</div>
+
+<div class="tabbar">
+  <button class="tabbtn active" data-tab="calendar">Calendar</button>
+  <button class="tabbtn" data-tab="fueling">Fueling Guide</button>
+</div>
+
+<div class="tabpanel active" id="tab-calendar">
+  <div class="legend">
+    <span><i class="dot swim"></i>Swim</span>
+    <span><i class="dot bike"></i>Bike</span>
+    <span><i class="dot run"></i>Run</span>
+    <span><i class="dot lift"></i>Lift</span>
+    <span><i class="dot rest"></i>Rest</span>
+    <span><i class="dot race"></i>Race</span>
+  </div>
+  <div class="weeknav" id="weeknav"></div>
+  <div id="weeks"></div>
+</div>
+
+<div class="tabpanel" id="tab-fueling">
+  <div class="ref-section">
+    <h3 class="ref-h">Where Liquid I.V. fits</h3>
+    <div class="ref-card">
+      <table class="ftab">
+        <tr><th>Situation</th><th>Use</th></tr>
+        <tr><td>Easy, under 60 min</td><td>Water</td></tr>
+        <tr><td>Long / hot training</td><td>Liquid I.V. can be useful</td></tr>
+        <tr><td>Long bike or brick</td><td>PF&amp;H + water, primarily</td></tr>
+        <tr><td>Race day</td><td>PF&amp;H + water + Honey Stinger</td></tr>
+        <tr><td>After long / hot sessions</td><td>Liquid I.V. is perfectly reasonable</td></tr>
+      </table>
+      <div class="note">Don't automatically stack Liquid I.V. + PF&amp;H + gels — that's a lot of carbohydrate and sodium you likely don't need at once.</div>
+    </div>
+  </div>
+
+  <div class="ref-section">
+    <h3 class="ref-h">Fueling progression across the plan</h3>
+    <div class="ref-card">
+      <table class="ftab">
+        <tr><th>Workout</th><th>Fuel practice</th></tr>
+        <tr><td>Easy 45–60 min</td><td>Water</td></tr>
+        <tr><td>60–75 min bike</td><td>PF&amp;H ~40–50 g/hr</td></tr>
+        <tr><td>7–8 mi run</td><td>30–50 g/hr</td></tr>
+        <tr><td>25–30 mi bike + brick</td><td>50–60 g/hr</td></tr>
+        <tr><td>8–9 mi run</td><td>40–50 g/hr</td></tr>
+        <tr><td>30–35 mi bike + brick</td><td>50–60 g/hr</td></tr>
+        <tr><td>Final 25–30 mi brick</td><td>Exact race nutrition</td></tr>
+        <tr><td>Olympic triathlon</td><td>50–60 g/hr</td></tr>
+        <tr><td>Half marathon</td><td>50–60 g/hr</td></tr>
+      </table>
+    </div>
+  </div>
+
+  <div class="ref-section">
+    <h3 class="ref-h">The sequence to rehearse</h3>
+    <div class="ref-card">
+      <div class="flow">
+        <span class="step">Rice cakes</span><span class="arrow">→</span>
+        <span class="step">Hydration</span><span class="arrow">→</span>
+        <span class="step">Swim</span><span class="arrow">→</span>
+        <span class="step">Carb/electrolyte bottle</span><span class="arrow">→</span>
+        <span class="step">Gel</span><span class="arrow">→</span>
+        <span class="step">Water</span><span class="arrow">→</span>
+        <span class="step">Gel</span><span class="arrow">→</span>
+        <span class="step">Brick / run</span>
+      </div>
+      <div class="note">Practice the whole sequence, not just what you eat — the goal is for race day to feel routine. Don't introduce anything new (gels, breakfast, supplements, big carb jumps) between now and Oct 11.</div>
+    </div>
+  </div>
+
+  <div class="ref-section">
+    <h3 class="ref-h">How to think about the Olympic</h3>
+    <div class="ref-card">
+      <p style="margin:0 0 8px;">Your sprint was 1:24:30; the Olympic is roughly double the bike/run distance. But with the half marathon only two weeks later, treat the Olympic as a supported long brick workout that happens to have a race number on it.</p>
+      <p style="margin:0;">If you finish thinking <em>"I definitely could have gone harder,"</em> that's a successful Olympic. You then get two weeks to recover and let your running fitness show up for the half.</p>
+    </div>
+  </div>
+</div>
+
+<script>
+const weeks = [
+  {
+    id:'w1', label:'Wk 1 · Sep 14', title:'Week 1 — Sept 14–20', goal:'Goal: Establish race-specific fueling',
+    days:[
+      {date:'Mon, Sept 14', disc:['lift'], title:'Lift + optional easy swim', sub:'Normal Monday lifting',
+        sections:[
+          {label:'Workout', items:['Normal Monday lifting session','Optional: 30–45 min easy swim, technique-focused — don\'t worry about pace']},
+          {label:'Fuel', items:['Normal meals + water. No special fueling needed.']}
+        ]},
+      {date:'Tue, Sept 15', disc:['bike'], title:'Bike — 60–75 min easy/moderate', sub:'Introduce PF&H fueling', today:true,
+        sections:[
+          {label:'Workout', items:['60–75 min bike, mostly Zone 2 / conversational','Introduce the Precision Fuel & Hydration (PF&H) mix — start conservative, ~40–50 g carbs/hour, don\'t worry about hitting the max yet']},
+          {label:'Fuel', items:['Eat normally beforehand','PF&H carb/electrolyte drink during','Water as needed','No gel necessary unless hungry']},
+          {label:'What you\'re testing', items:['Taste','Stomach','Thirst','Whether you feel better/worse vs. Liquid I.V.']}
+        ]},
+      {date:'Wed, Sept 16', disc:['run','lift'], title:'Run 4–5 mi easy + Lift', sub:'Very relaxed, no workout',
+        sections:[
+          {label:'Workout', items:['Run 4–5 miles, very relaxed — don\'t turn it into a workout','Then: normal lifting']},
+          {label:'Fuel', items:['Water. No need for carbs during.']}
+        ]},
+      {date:'Thu, Sept 17', disc:['swim','bike'], title:'Swim 1,500–2,000 yd + easy brick', sub:'Open water is valuable here',
+        sections:[
+          {label:'Workout', items:['300 easy','4 × 100 technique','4 × 200 moderate','4 × 50 relaxed','200 cooldown','If you have access to open water, this is an excellent day to practice it — even 20–30 min is valuable','Then: 15–20 min very easy bike/run brick — nothing hard']},
+          {label:'Fuel', items:['If total session is >75–90 min, practice PF&H']}
+        ]},
+      {date:'Fri, Sept 18', disc:['lift'], title:'Lift', sub:'Keep it normal',
+        sections:[
+          {label:'Workout', items:['Normal lifting — avoid taking leg training to failure']},
+          {label:'Fuel', items:['Normal food/hydration']}
+        ]},
+      {date:'Sat, Sept 19', disc:['bike','run'], title:'Bike 25–30 mi + easy run', sub:'Most important race-specific workout so far', key:true,
+        sections:[
+          {label:'Workout', items:['Bike: 25–30 miles, mostly easy/moderate','Then: 15–20 min easy run']},
+          {label:'Fuel this one like race day', items:['2 hrs before: your normal rice cakes; add an easy carb source if rice cakes are small','On bike: PF&H Carb & Electrolyte mix, target ~50–60 g carbs/hour','1 Honey Stinger around 30–40 min','Water as needed','Don\'t add Liquid I.V. on top of a heavily concentrated carb/electrolyte bottle just for the sake of it']},
+          {label:'You\'re testing your race system', items:['Write down afterward: how much you drank, how many carbs, whether your stomach felt good, whether you felt thirsty, whether you felt energetic during the brick']}
+        ]},
+      {date:'Sun, Sept 20', disc:['run'], title:'Run 7–8 mi easy', sub:'No need to push past recent 8-miler',
+        sections:[
+          {label:'Workout', items:['7–8 miles at easy pace. You\'ve already recently run 8 miles, so no reason to push to 10+.']},
+          {label:'Fuel', items:['Rice cakes 1.5–2 hrs beforehand','Water','If >75 min: practice 30–50 g carbs/hr','Honey Stinger around 35–45 min','Liquid I.V. can be used if it\'s hot/sweaty']}
+        ]}
+    ]
+  },
+  {
+    id:'w2', label:'Wk 2 · Sep 21', title:'Week 2 — Sept 21–27', goal:'Goal: Increase endurance and dial in fueling — biggest training week',
+    days:[
+      {date:'Mon, Sept 21', disc:['lift'], title:'Lift + optional easy swim', sub:'1,500–2,000 yd if you want',
+        sections:[{label:'Workout', items:['Normal lifting','Optional: swim 1,500–2,000 yd, easy']}]},
+      {date:'Tue, Sept 22', disc:['bike'], title:'Bike — 75–90 min', sub:'Mostly Zone 2 with intervals',
+        sections:[
+          {label:'Workout', items:['75–90 min, mostly Zone 2','Include 3 × 8 min moderately hard, with 5 min easy between']},
+          {label:'Fuel', items:['PF&H, 50–60 g carbs/hour','No need for multiple gels']}
+        ]},
+      {date:'Wed, Sept 23', disc:['run','lift'], title:'Run 5 mi + Lift', sub:'Last mile comfortably moderate',
+        sections:[{label:'Workout', items:['Run 5 miles — first 4 easy, last mile comfortably moderate','Then: lift']}]},
+      {date:'Thu, Sept 24', disc:['swim','bike'], title:'Open-water swim 1,500–2,000 m', sub:'Important — practice sighting & conditions',
+        sections:[
+          {label:'Workout', items:['Open-water swim, 1,500–2,000 m','Practice: sighting, swimming straight, starting calmly, swimming around other people if possible, getting comfortable breathing in the conditions, swimming continuously rather than constantly stopping','Then: 20–25 min easy bike']},
+          {label:'Fuel', items:['PF&H if the combined workout approaches ~90 min']}
+        ]},
+      {date:'Fri, Sept 25', disc:['lift'], title:'Lift', sub:'Keep legs controlled',
+        sections:[{label:'Workout', items:['Controlled legs — no max-effort squats/deadlifts']}]},
+      {date:'Sat, Sept 26', disc:['bike','run'], title:'Biggest workout — Bike 30–35 mi + run', sub:'Full fueling rehearsal', key:true,
+        sections:[
+          {label:'Workout', items:['Bike: 30–35 miles','Then: 20 min easy run','You do not need a 40–50 mile bike — you\'re training to comfortably complete ~25 miles, not an Ironman']},
+          {label:'Full fueling rehearsal', items:['2 hrs before: rice cakes, banana or another easy carb if needed, water','On bike: PF&H 50–60 g carbs/hr','1 Honey Stinger around 30–40 min','Second gel around 70–80 min if needed','Water according to thirst/heat']},
+          {label:'If it\'s hot', items:['Liquid I.V. can be used before the workout or as part of hydration strategy — but don\'t stack a concentrated PF&H drink + Liquid I.V. + lots of gels without accounting for total carbs/sodium']},
+          {label:'Purpose', items:['Find your sweet spot']}
+        ]},
+      {date:'Sun, Sept 27', disc:['run'], title:'Run 8–9 mi easy', sub:'Longest run before the Olympic',
+        sections:[
+          {label:'Workout', items:['8–9 miles, easy. This is your longest run before the Olympic.']},
+          {label:'Fuel', items:['Rice cakes 2 hrs before','Water','40–50 g carbs/hr','Honey Stinger around 35–40 min','Another around 75–80 min if necessary','Liquid I.V. if hot']},
+          {label:'Note', items:['You don\'t need to run 10–12 miles — prior half-marathon experience gives some insurance here']}
+        ]}
+    ]
+  },
+  {
+    id:'w3', label:'Wk 3 · Sep 28', title:'Week 3 — Sept 28–Oct 4', goal:'Goal: Race specificity, then begin backing off — final substantial week',
+    days:[
+      {date:'Mon, Sept 28', disc:['lift'], title:'Lift + optional easy swim', sub:'Slightly lower volume',
+        sections:[{label:'Workout', items:['Lifting volume slightly lower','Optional easy swim']}]},
+      {date:'Tue, Sept 29', disc:['bike'], title:'Bike — 75–90 min', sub:'2 × 15 min at Olympic-tri effort',
+        sections:[
+          {label:'Workout', items:['75–90 min, mostly easy','Include 2 × 15 min at Olympic-tri effort — controlled: "I could maintain this for a long time"']},
+          {label:'Fuel', items:['PF&H — 50–60 g/hr']}
+        ]},
+      {date:'Wed, Sept 30', disc:['run','lift'], title:'Run 5–6 mi + Lift', sub:'3 × 5 min comfortably hard',
+        sections:[{label:'Workout', items:['5–6 miles easy with 3 × 5 min comfortably hard (not all-out)','Then: lift, reduce leg volume']}]},
+      {date:'Thu, Oct 1', disc:['swim','bike'], title:'Race-specific open-water swim', sub:'Especially important for open-water comfort',
+        sections:[
+          {label:'Workout', items:['Ideally open water, ~1,500–1,800 m continuous/easy-moderate','Practice your first 300–400 m deliberately easy','This is especially important — pool swimming is comfortable, but open water is what made your sprint swim more challenging','Then: 15 min easy bike, no hard brick needed']}
+        ]},
+      {date:'Fri, Oct 2', disc:['lift'], title:'Lift — reduced volume', sub:'Roughly 60–70% of normal',
+        sections:[{label:'Workout', items:['Roughly 60–70% of your normal lifting volume — maintain strength, not create soreness']}]},
+      {date:'Sat, Oct 3', disc:['bike','run'], title:'Final meaningful brick — Bike 25–30 mi', sub:'Dress rehearsal — don\'t experiment after this', key:true,
+        sections:[
+          {label:'Workout', items:['Bike: 25–30 miles — your final meaningful brick','Then: 15–20 min easy run — should feel almost boring']},
+          {label:'Fuel exactly as you intend to race', items:['This is your dress rehearsal','If your race plan is PF&H drink + Honey Stinger + water, that\'s what you use','Don\'t experiment after this point']}
+        ]},
+      {date:'Sun, Oct 4', disc:['run'], title:'Run 6–7 mi easy', sub:'Don\'t chase mileage',
+        sections:[{label:'Workout', items:['6–7 miles easy — don\'t chase mileage, you\'re starting to reduce fatigue']}, {label:'Fuel', items:['Normally']}]}
+    ]
+  },
+  {
+    id:'w4', label:'Wk 4 · Oct 5', title:'Week 4 — Oct 5–11 · RACE WEEK', goal:'Goal: freshness, not fitness. You can\'t gain meaningful fitness this week — you can ruin your race by training too hard.',
+    days:[
+      {date:'Mon, Oct 5', disc:['swim','lift'], title:'Easy swim 1,000–1,500 yd', sub:'Lift optional — extremely light or skip',
+        sections:[{label:'Workout', items:['Easy swim, 1,000–1,500 yd, very relaxed','Lift: optional, but make it extremely light or skip it']}]},
+      {date:'Tue, Oct 6', disc:['bike'], title:'Bike — 45–60 min', sub:'3 × 3 min race effort',
+        sections:[{label:'Workout', items:['45–60 min easy with 3 × 3 min race effort, lots of recovery']}]},
+      {date:'Wed, Oct 7', disc:['run'], title:'Run 3–4 mi easy + strides', sub:'No normal heavy lifting',
+        sections:[{label:'Workout', items:['3–4 miles easy, add 3–4 short strides','No normal heavy lifting — if you want, mobility/light activation only']}]},
+      {date:'Thu, Oct 8', disc:['swim'], title:'Swim 1,000–1,500 yd easy', sub:'Include a few short race-effort efforts',
+        sections:[{label:'Workout', items:['1,000–1,500 yd easy, including a few short race-effort efforts']}]},
+      {date:'Fri, Oct 9', disc:['rest'], title:'REST', sub:'Seriously.',
+        sections:[{label:'Today', items:['Walk around, stretch lightly, hydrate']}]},
+      {date:'Sat, Oct 10', disc:['bike','run'], title:'15–20 min very easy', sub:'Prepare gear and nutrition',
+        sections:[{label:'Workout', items:['Tiny 10 min bike + 5 min run just to loosen up, then stop'],}, {label:'Also today', items:['Prepare your gear and nutrition']}]},
+      {date:'Sun, Oct 11', disc:['race'], race:true, title:'OLYMPIC TRIATHLON', sub:'Goal: finish comfortably — not a PR',
+        sections:[
+          {label:'Goal', items:['Finish comfortably. Not a PR. Not racing the people around you. Not seeing how fast you can run the 10K.']},
+          {label:'Race morning — ~3 hrs before', items:['Normal breakfast: 2 rice cakes + additional easy carbohydrate — e.g. 2 rice cakes, banana, small amount of honey/jam, water','You don\'t need a giant breakfast']},
+          {label:'~15–20 min before swim', items:['Optional: 1 Honey Stinger — only if you\'ve practiced this']},
+          {label:'Swim', items:['Sprint swim was 11:53, but open water is a different challenge — start very conservatively','First 3–5 min: "why am I swimming so slowly?" — that\'s okay, don\'t fight the water','Focus: relaxed breathing, long strokes, sighting, staying calm','Goal on exit: "that was easy"']},
+          {label:'Bike — this is where you eat and drink', items:['Target ~50–60 g carbs/hour, start drinking within the first ~10–15 min','0:15 — start regularly sipping PF&H','0:30–0:40 — Honey Stinger','0:45–1:00 — continue PF&H','~1:05–1:15 — second gel if needed','Finish bike continuing to drink; water as needed depending on duration/weather']},
+          {label:'Run', items:['Biggest mistake to avoid: running the first mile too fast because you feel amazing','First 2 miles should feel almost embarrassingly easy, then settle in','Fuel: ~20–30 min Honey Stinger, water at aid stations, another gel around 45–55 min if still running and you feel you need it','You don\'t need to force-feed yourself']}
+        ]}
+    ]
+  },
+  {
+    id:'w5', label:'Wk 5 · Oct 12', title:'Oct 12–18 — Recover → Half Marathon', goal:'Extremely important week: recover from the triathlon, regain running rhythm, then taper.',
+    days:[
+      {date:'Mon, Oct 12', disc:['rest'], title:'Complete rest', sub:'Walk, eat, hydrate, sleep',
+        sections:[{label:'Today', items:['Walk around, eat, hydrate, sleep']}]},
+      {date:'Tue, Oct 13', disc:['run','rest'], title:'20–30 min very easy run — if feeling good', sub:'If sore, rest instead',
+        sections:[{label:'Workout', items:['If feeling good: 20–30 min very easy run','If sore: REST — don\'t force it']}]},
+      {date:'Wed, Oct 14', disc:['lift','run'], title:'Very light lift (optional) + easy run', sub:'20–30 min, no hard leg work',
+        sections:[{label:'Workout', items:['Very light lift, optional','20–30 min easy run, no hard leg work']}]},
+      {date:'Thu, Oct 15', disc:['bike','rest'], title:'Easy bike 45–60 min, or rest', sub:'',
+        sections:[{label:'Workout', items:['Easy bike 45–60 min, or rest']}]},
+      {date:'Fri, Oct 16', disc:['run'], title:'Run 4–5 mi easy/moderate', sub:'First meaningful post-triathlon run',
+        sections:[{label:'Workout', items:['4–5 miles easy/moderate — your first meaningful post-triathlon run','If still sore, cut it short']}]},
+      {date:'Sat, Oct 17', disc:['lift','rest'], title:'Light lift or rest', sub:'No heavy legs',
+        sections:[{label:'Workout', items:['Light lift or rest — no heavy legs']}]},
+      {date:'Sun, Oct 18', disc:['run'], title:'Run 6–8 mi easy', sub:'Final longer run',
+        sections:[{label:'Workout', items:['6–8 miles easy — your final longer run','Do not run 10–12 miles, you\'ve already done your endurance work']}]}
+    ]
+  },
+  {
+    id:'w6', label:'Wk 6 · Oct 19', title:'Oct 19–25 — Half Marathon Taper', goal:'',
+    days:[
+      {date:'Mon, Oct 19', disc:['rest'], title:'REST', sub:'', sections:[]},
+      {date:'Tue, Oct 20', disc:['run'], title:'Run 4–5 mi', sub:'3 × 5 min at half-marathon effort',
+        sections:[{label:'Workout', items:['4–5 miles easy with 3 × 5 min at half-marathon effort, not all-out']}]},
+      {date:'Wed, Oct 21', disc:['lift','rest'], title:'Very light lift or rest', sub:'Probably skip heavy legs entirely',
+        sections:[{label:'Workout', items:['Very light lift or rest — probably skip heavy legs entirely']}]},
+      {date:'Thu, Oct 22', disc:['run'], title:'Run 3–4 mi easy', sub:'A few short strides',
+        sections:[{label:'Workout', items:['3–4 miles easy, a few short strides']}]},
+      {date:'Fri, Oct 23', disc:['rest'], title:'REST', sub:'', sections:[]},
+      {date:'Sat, Oct 24', disc:['run'], title:'15–20 min shakeout', sub:'Very easy',
+        sections:[{label:'Workout', items:['15–20 min very easy shakeout']}]},
+      {date:'Sun, Oct 25', disc:['race'], race:true, title:'HALF MARATHON', sub:'Now you can actually race',
+        sections:[
+          {label:'Goal', items:['Assuming you\'ve recovered well from the Olympic, this is where you can pursue a performance goal if you want']},
+          {label:'2–3 hrs before', items:['Rice cakes + additional easy carbs — aim for a carb-heavy breakfast rather than just two small rice cakes if those don\'t provide much carbohydrate','E.g. 2 rice cakes + banana + honey/jam + water','You don\'t need protein/fat-heavy food immediately before']},
+          {label:'~10–15 min before', items:['Honey Stinger']},
+          {label:'During', items:['Target approximately 50–60 g carbs/hour','Simple approach: 20–25 min gel, 45–50 min gel, 70–75 min gel, 95–100 min gel if needed','Use your PF&H carb/electrolyte drink as part of that total if you\'re carrying it — you don\'t need it exclusively from gels (e.g. PF&H drink + 2–3 Honey Stingers can get you there)']}
+        ]}
+    ]
+  }
+];
+
+const iconMap = {swim:'swim',bike:'bike',run:'run',lift:'lift',rest:'rest',race:'race'};
+
+function daysBetween(target){
+  const today = new Date(); today.setHours(0,0,0,0);
+  const t = new Date(target); t.setHours(0,0,0,0);
+  return Math.round((t-today)/86400000);
+}
+function fmtCountdown(n){
+  if(n>0) return n+' day'+(n===1?'':'s')+' away';
+  if(n===0) return 'Today';
+  return (n*-1)+' day'+(n===-1?'':'s')+' ago';
+}
+document.getElementById('days-to-tri').textContent = fmtCountdown(daysBetween('2026-10-11'));
+document.getElementById('days-to-half').textContent = fmtCountdown(daysBetween('2026-10-25'));
+
+const weeknavEl = document.getElementById('weeknav');
+const weeksEl = document.getElementById('weeks');
+
+weeks.forEach((w, wi)=>{
+  const pill = document.createElement('button');
+  pill.className = 'weekpill' + (wi===0?' active':'');
+  pill.textContent = w.label;
+  pill.dataset.week = w.id;
+  pill.addEventListener('click', ()=>showWeek(w.id));
+  weeknavEl.appendChild(pill);
+
+  const block = document.createElement('div');
+  block.className = 'week-block' + (wi===0?' active':'');
+  block.id = 'block-'+w.id;
+
+  let html = `<div class="week-title">${w.title}</div>`;
+  if(w.goal) html += `<div class="week-goal">${w.goal}</div>`;
+
+  w.days.forEach((d, di)=>{
+    const dots = d.disc.map(x=>`<span class="dot ${iconMap[x]}"></span>`).join('');
+    const cls = ['day'];
+    if(d.today) cls.push('today','open');
+    if(d.key) cls.push('key');
+    if(d.race) cls.push('race','open');
+    let badge = '';
+    if(d.today) badge = '<span class="badge today">TODAY</span>';
+    else if(d.race) badge = '<span class="badge race">RACE DAY</span>';
+    else if(d.key) badge = '<span class="badge key">KEY SESSION</span>';
+
+    let body = '';
+    d.sections.forEach(s=>{
+      body += `<div class="sec"><div class="sec-label">${s.label}</div><ul>${s.items.map(i=>`<li>${i}</li>`).join('')}</ul></div>`;
+    });
+
+    html += `
+    <div class="${cls.join(' ')}" data-id="${w.id}-${di}">
+      <div class="day-head" onclick="toggleDay(this)">
+        <div class="day-date"><div class="dow">${d.date.split(',')[0]}</div><div class="num">${d.date.split(' ')[2].replace(',','')}</div></div>
+        <div class="day-main">
+          <div class="day-title">${dots}${d.title}${badge}</div>
+          <div class="day-sub">${d.sub||''}</div>
+        </div>
+        <svg class="chev" viewBox="0 0 24 24" fill="none"><path d="M6 9l6 6 6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </div>
+      <div class="day-body">${body}</div>
+    </div>`;
+  });
+
+  block.innerHTML = html;
+  weeksEl.appendChild(block);
+});
+
+function showWeek(id){
+  document.querySelectorAll('.weekpill').forEach(p=>p.classList.toggle('active', p.dataset.week===id));
+  document.querySelectorAll('.week-block').forEach(b=>b.classList.toggle('active', b.id==='block-'+id));
+}
+function toggleDay(headEl){
+  headEl.parentElement.classList.toggle('open');
+}
+
+// Tabs
+document.querySelectorAll('.tabbtn').forEach(btn=>{
+  btn.addEventListener('click', ()=>{
+    document.querySelectorAll('.tabbtn').forEach(b=>b.classList.remove('active'));
+    document.querySelectorAll('.tabpanel').forEach(p=>p.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById('tab-'+btn.dataset.tab).classList.add('active');
+  });
+});
+
+// Auto-scroll today's week pill into view + today's card
+window.addEventListener('load', ()=>{
+  const todayCard = document.querySelector('.day.today');
+  if(todayCard){
+    const weekId = todayCard.dataset.id.split('-')[0];
+    showWeek(weekId);
+    document.querySelectorAll('.weekpill').forEach(p=>{ if(p.dataset.week===weekId) p.scrollIntoView({inline:'center'}); });
+    setTimeout(()=>todayCard.scrollIntoView({behavior:'smooth', block:'center'}), 200);
+  }
+});
+</script>
+
+</body>
+</html>
