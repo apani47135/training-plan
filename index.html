@@ -266,6 +266,103 @@
     color:var(--muted);
   }
   .legend span{display:flex; align-items:center; gap:5px;}
+
+  /* Today summary card */
+  .today-card{
+    background:linear-gradient(135deg, #1B2A4E 0%, var(--surface) 100%);
+    border:1px solid var(--race);
+    border-radius:16px;
+    padding:15px 16px;
+    margin-bottom:18px;
+  }
+  .today-card .tc-eyebrow{
+    font-size:11px;
+    font-weight:700;
+    color:var(--race);
+    text-transform:uppercase;
+    letter-spacing:0.05em;
+    margin-bottom:6px;
+  }
+  .today-card .tc-title{
+    font-size:16.5px;
+    font-weight:700;
+    margin-bottom:3px;
+  }
+  .today-card .tc-sub{
+    font-size:13px;
+    color:var(--muted);
+    margin-bottom:10px;
+  }
+  .today-card .tc-btn{
+    display:inline-block;
+    background:var(--race);
+    color:#1A0F0A;
+    font-size:12.5px;
+    font-weight:700;
+    padding:8px 14px;
+    border-radius:10px;
+    border:none;
+    cursor:pointer;
+  }
+  .today-card.none{border-color:var(--border);}
+  .today-card.none .tc-eyebrow{color:var(--muted);}
+
+  /* Progress bar */
+  .progress-wrap{
+    margin-bottom:16px;
+  }
+  .progress-label{
+    font-size:12px;
+    color:var(--muted);
+    margin-bottom:6px;
+    display:flex;
+    justify-content:space-between;
+  }
+  .progress-track{
+    height:6px;
+    background:var(--surface-2);
+    border-radius:999px;
+    overflow:hidden;
+  }
+  .progress-fill{
+    height:100%;
+    background:var(--rest);
+    border-radius:999px;
+    transition:width .25s ease;
+  }
+
+  /* Completion checkbox */
+  .check{
+    flex:none;
+    width:24px;
+    height:24px;
+    padding:0;
+    margin:0;
+    border-radius:50%;
+    border:1.5px solid var(--border);
+    background:transparent;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    cursor:pointer;
+    -webkit-tap-highlight-color:transparent;
+    -webkit-appearance:none;
+    appearance:none;
+  }
+  .check svg{width:13px; height:13px; opacity:0; transition:opacity .15s ease;}
+  .day.done .check{background:var(--rest); border-color:var(--rest);}
+  .day.done .check svg{opacity:1;}
+  .day.done{opacity:0.72;}
+  .day.done .day-title{text-decoration:line-through; text-decoration-color:var(--muted); text-decoration-thickness:1.5px;}
+  .day.done.today, .day.done.race{opacity:0.85;}
+
+  .storage-note{
+    font-size:11px;
+    color:var(--muted);
+    text-align:center;
+    margin:18px 0 6px;
+    line-height:1.5;
+  }
 </style>
 </head>
 <body>
@@ -285,6 +382,10 @@
       <div class="rt-days" id="days-to-half"></div>
     </div>
   </div>
+  <div class="progress-wrap">
+    <div class="progress-label"><span id="progress-label-text">0 / 0 workouts logged</span></div>
+    <div class="progress-bar"><div class="progress-fill" id="progress-fill" style="width:0%"></div></div>
+  </div>
 </div>
 
 <div class="tabbar">
@@ -293,6 +394,13 @@
 </div>
 
 <div class="tabpanel active" id="tab-calendar">
+  <div class="today-card" id="today-card"></div>
+
+  <div class="progress-wrap">
+    <div class="progress-label"><span>Progress</span><span id="progress-text">0 / 0 logged</span></div>
+    <div class="progress-track"><div class="progress-fill" id="progress-fill" style="width:0%"></div></div>
+  </div>
+
   <div class="legend">
     <span><i class="dot swim"></i>Swim</span>
     <span><i class="dot bike"></i>Bike</span>
@@ -303,6 +411,7 @@
   </div>
   <div class="weeknav" id="weeknav"></div>
   <div id="weeks"></div>
+  <div class="storage-note">Tapping the circle marks a workout done. That's saved only in this browser on this device — it doesn't sync anywhere or leave your phone.</div>
 </div>
 
 <div class="tabpanel" id="tab-fueling">
@@ -375,7 +484,7 @@ const weeks = [
           {label:'Workout', items:['Normal Monday lifting session','Optional: 30–45 min easy swim, technique-focused — don\'t worry about pace']},
           {label:'Fuel', items:['Normal meals + water. No special fueling needed.']}
         ]},
-      {date:'Tue, Sept 15', disc:['bike'], title:'Bike — 60–75 min easy/moderate', sub:'Introduce PF&H fueling', today:true,
+      {date:'Tue, Sept 15', disc:['bike'], title:'Bike — 60–75 min easy/moderate', sub:'Introduce PF&H fueling',
         sections:[
           {label:'Workout', items:['60–75 min bike, mostly Zone 2 / conversational','Introduce the Precision Fuel & Hydration (PF&H) mix — start conservative, ~40–50 g carbs/hour, don\'t worry about hitting the max yet']},
           {label:'Fuel', items:['Eat normally beforehand','PF&H carb/electrolyte drink during','Water as needed','No gel necessary unless hungry']},
@@ -540,7 +649,17 @@ const weeks = [
 ];
 
 const iconMap = {swim:'swim',bike:'bike',run:'run',lift:'lift',rest:'rest',race:'race'};
+const MONTHS = {Jan:0,Feb:1,Mar:2,Apr:3,May:4,Jun:5,Jul:6,Jun:5,Jul:6,Aug:7,Sep:8,Sept:8,Oct:9,Nov:10,Dec:11};
 
+// "Tue, Sept 15" -> Date(2026, 8, 15). All plan dates fall in 2026.
+function parseDayDate(str){
+  const part = str.split(',')[1].trim();       // "Sept 15"
+  const [monStr, dayStr] = part.split(/\s+/);
+  return new Date(2026, MONTHS[monStr], parseInt(dayStr, 10));
+}
+function isSameDay(a, b){
+  return a.getFullYear()===b.getFullYear() && a.getMonth()===b.getMonth() && a.getDate()===b.getDate();
+}
 function daysBetween(target){
   const today = new Date(); today.setHours(0,0,0,0);
   const t = new Date(target); t.setHours(0,0,0,0);
@@ -554,8 +673,36 @@ function fmtCountdown(n){
 document.getElementById('days-to-tri').textContent = fmtCountdown(daysBetween('2026-10-11'));
 document.getElementById('days-to-half').textContent = fmtCountdown(daysBetween('2026-10-25'));
 
+/* ---------- Completed-workout storage ----------
+   Saved in this browser's localStorage only, under one namespaced key.
+   Nothing is sent anywhere; it never leaves the device. Every access is
+   wrapped in try/catch so the page still works fine (it just won't
+   remember state) if storage is blocked, e.g. in private browsing. */
+const STORAGE_KEY = 'tri-plan-completed-v1';
+
+function loadCompleted(){
+  try{
+    const raw = window.localStorage.getItem(STORAGE_KEY);
+    return raw ? JSON.parse(raw) : {};
+  }catch(e){
+    return {};
+  }
+}
+function saveCompleted(map){
+  try{
+    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(map));
+  }catch(e){
+    // Storage unavailable (private browsing, disabled, quota, etc).
+    // Fail silently — completion still works for the current page view.
+  }
+}
+let completed = loadCompleted();
+
+const today = new Date(); today.setHours(0,0,0,0);
+
 const weeknavEl = document.getElementById('weeknav');
 const weeksEl = document.getElementById('weeks');
+let todayEntry = null; // {weekId, dayId, day}
 
 weeks.forEach((w, wi)=>{
   const pill = document.createElement('button');
@@ -573,13 +720,20 @@ weeks.forEach((w, wi)=>{
   if(w.goal) html += `<div class="week-goal">${w.goal}</div>`;
 
   w.days.forEach((d, di)=>{
+    const dayId = `${w.id}-${di}`;
+    const dObj = parseDayDate(d.date);
+    const isToday = isSameDay(dObj, today);
+    if(isToday) todayEntry = {weekId:w.id, dayId, day:d};
+
     const dots = d.disc.map(x=>`<span class="dot ${iconMap[x]}"></span>`).join('');
     const cls = ['day'];
-    if(d.today) cls.push('today','open');
+    if(isToday) cls.push('today','open');
     if(d.key) cls.push('key');
     if(d.race) cls.push('race','open');
+    if(completed[dayId]) cls.push('done');
+
     let badge = '';
-    if(d.today) badge = '<span class="badge today">TODAY</span>';
+    if(isToday) badge = '<span class="badge today">TODAY</span>';
     else if(d.race) badge = '<span class="badge race">RACE DAY</span>';
     else if(d.key) badge = '<span class="badge key">KEY SESSION</span>';
 
@@ -589,14 +743,19 @@ weeks.forEach((w, wi)=>{
     });
 
     html += `
-    <div class="${cls.join(' ')}" data-id="${w.id}-${di}">
-      <div class="day-head" onclick="toggleDay(this)">
-        <div class="day-date"><div class="dow">${d.date.split(',')[0]}</div><div class="num">${d.date.split(' ')[2].replace(',','')}</div></div>
-        <div class="day-main">
-          <div class="day-title">${dots}${d.title}${badge}</div>
-          <div class="day-sub">${d.sub||''}</div>
+    <div class="${cls.join(' ')}" data-id="${dayId}">
+      <div class="day-head">
+        <button class="check" aria-label="Mark workout done" onclick="event.stopPropagation(); toggleDone('${dayId}')">
+          <svg viewBox="0 0 24 24" fill="none"><path d="M5 13l4 4L19 7" stroke="#0B1120" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+        <div class="day-head-main" onclick="toggleDay(this)" style="display:flex; align-items:center; gap:12px; flex:1; min-width:0; cursor:pointer;">
+          <div class="day-date"><div class="dow">${d.date.split(',')[0]}</div><div class="num">${d.date.split(' ')[2].replace(',','')}</div></div>
+          <div class="day-main">
+            <div class="day-title">${dots}${d.title}${badge}</div>
+            <div class="day-sub">${d.sub||''}</div>
+          </div>
+          <svg class="chev" viewBox="0 0 24 24" fill="none"><path d="M6 9l6 6 6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
         </div>
-        <svg class="chev" viewBox="0 0 24 24" fill="none"><path d="M6 9l6 6 6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
       </div>
       <div class="day-body">${body}</div>
     </div>`;
@@ -610,9 +769,60 @@ function showWeek(id){
   document.querySelectorAll('.weekpill').forEach(p=>p.classList.toggle('active', p.dataset.week===id));
   document.querySelectorAll('.week-block').forEach(b=>b.classList.toggle('active', b.id==='block-'+id));
 }
-function toggleDay(headEl){
-  headEl.parentElement.classList.toggle('open');
+function toggleDay(headMainEl){
+  headMainEl.closest('.day').classList.toggle('open');
 }
+function toggleDone(dayId){
+  completed[dayId] = !completed[dayId];
+  if(!completed[dayId]) delete completed[dayId];
+  saveCompleted(completed);
+  const card = document.querySelector(`.day[data-id="${dayId}"]`);
+  if(card) card.classList.toggle('done', !!completed[dayId]);
+  updateProgress();
+}
+function updateProgress(){
+  const total = weeks.reduce((sum,w)=>sum+w.days.length, 0);
+  const done = Object.keys(completed).length;
+  document.getElementById('progress-text').textContent = `${done} / ${total} logged`;
+  document.getElementById('progress-fill').style.width = total ? `${Math.round(done/total*100)}%` : '0%';
+}
+updateProgress();
+
+// Today summary card
+function renderTodayCard(){
+  const el = document.getElementById('today-card');
+  if(!todayEntry){
+    const untilStart = daysBetween('2026-09-14');
+    const untilTri = daysBetween('2026-10-11');
+    el.classList.add('none');
+    if(untilStart > 0){
+      el.innerHTML = `<div class="tc-eyebrow">Not started yet</div><div class="tc-title">Plan begins in ${untilStart} day${untilStart===1?'':'s'}</div><div class="tc-sub">First session: Monday, Sept 14</div>`;
+    } else if(untilTri < 0 && daysBetween('2026-10-25') < 0){
+      el.innerHTML = `<div class="tc-eyebrow">Season complete</div><div class="tc-title">Nice work — both races are done 🎉</div>`;
+    } else {
+      el.innerHTML = `<div class="tc-eyebrow">Rest of season</div><div class="tc-title">No scheduled session today</div><div class="tc-sub">Check the week tabs below for what's next</div>`;
+    }
+    return;
+  }
+  const d = todayEntry.day;
+  const eyebrow = d.race ? "TODAY · RACE DAY" : (d.key ? "TODAY · KEY SESSION" : "TODAY'S WORKOUT");
+  el.innerHTML = `
+    <div class="tc-eyebrow">${eyebrow}</div>
+    <div class="tc-title">${d.title}</div>
+    <div class="tc-sub">${d.sub||''}</div>
+    <button class="tc-btn" onclick="jumpToToday()">View details</button>
+  `;
+}
+function jumpToToday(){
+  showWeek(todayEntry.weekId);
+  document.querySelectorAll('.weekpill').forEach(p=>{ if(p.dataset.week===todayEntry.weekId) p.scrollIntoView({inline:'center'}); });
+  const card = document.querySelector(`.day[data-id="${todayEntry.dayId}"]`);
+  if(card){
+    card.classList.add('open');
+    setTimeout(()=>card.scrollIntoView({behavior:'smooth', block:'center'}), 150);
+  }
+}
+renderTodayCard();
 
 // Tabs
 document.querySelectorAll('.tabbtn').forEach(btn=>{
@@ -624,14 +834,13 @@ document.querySelectorAll('.tabbtn').forEach(btn=>{
   });
 });
 
-// Auto-scroll today's week pill into view + today's card
+// On load: jump to today's week + scroll today's card into view
 window.addEventListener('load', ()=>{
-  const todayCard = document.querySelector('.day.today');
-  if(todayCard){
-    const weekId = todayCard.dataset.id.split('-')[0];
-    showWeek(weekId);
-    document.querySelectorAll('.weekpill').forEach(p=>{ if(p.dataset.week===weekId) p.scrollIntoView({inline:'center'}); });
-    setTimeout(()=>todayCard.scrollIntoView({behavior:'smooth', block:'center'}), 200);
+  if(todayEntry){
+    showWeek(todayEntry.weekId);
+    document.querySelectorAll('.weekpill').forEach(p=>{ if(p.dataset.week===todayEntry.weekId) p.scrollIntoView({inline:'center'}); });
+    const card = document.querySelector(`.day[data-id="${todayEntry.dayId}"]`);
+    if(card) setTimeout(()=>card.scrollIntoView({behavior:'smooth', block:'center'}), 200);
   }
 });
 </script>
